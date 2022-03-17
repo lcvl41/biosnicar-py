@@ -3,25 +3,26 @@ CTRL:
   WINDOW_SIZE: 9
   POLY_ORDER: 3
 RTM:
-  DIRECT: 1
+  DIRECT: 1 # updated from crust dev model
   NBR_WVL: 480
   APRX_TYP: 2
   DELTA: True
   SOLZEN: 50
-  INCOMING: 0
+  INCOMING: 0 # would be nice to get from empirical ASD data
   ILLUMINATION_FILE_STUBS: ["swnb_480bnd_mlw", "swnb_480bnd_mls", "swnb_480bnd_saw",
     "swnb_480bnd_sas", "swnb_480bnd_smm", "swnb_480bnd_hmn", "swnb_480bnd_trp"]
   VIS_MAX_IDX: 39
   NIR_MAX_IDX: 480
+  SZA: 45 # updated from crust dev model
 ICE:
-  DZ: [0.001, 0.08]  # thickness of each vertical layer (unit : m)
-  LAYER_TYPE: [0, 1] # Fresnel layers (set all to 0 if toon : True)
-  CDOM: [0, 0]  # Only for layer type :: 1
-  RHO: [916, 479.0] # density of each layer (unit : kg m-3)
+  DZ: [0.001, 0.08] # updated from crust dev model
+  LAYER_TYPE: [0, 1] # maybe to update if snowfall included
+  CDOM: [0, 0]  
+  RHO: [916, 884.0] # updated from crust dev model
   RF: 2
-  SHP: [0, 0]  # grain shape (He et al. 2016, 2017)
-  RDS: [5000, 5000]  # effective grain or bubble radius
-  WATER: [0, 0]  # radius of optional liquid water coating
+  SHP: [0, 0] 
+  RDS: [5000, 5000]  # updated from crust dev model
+  WATER: [0, 0]  
   HEX_SIDE: [10000, 10000]
   HEX_LENGTH: [10000, 10000]
   SHP_FCTR: [0, 0]
@@ -111,9 +112,9 @@ BIOOPTICAL:
   INFO_NETCDF: "info"
   FILENAME_NETCDF: "alg"
 CRUST_DEV:
-  BBA: 0.33663
-  IRRADIANCE: 750   # W m-2
-  Z0: 0.000246   # unitless from Schuster 2001
+  BBA: 0.1053 # updated from crust dev model
+  IRRADIANCE: 750   # updated from crust dev model
+  Z0: 0.000246   # cst unitless from Schuster 2001
   HEIGHT: 1   # m
   RHO: 1.225   # kg/m3 at sea level and 15 degrees C
   KIN_VIS: 0.0000148   # m2 s-1 kinematic viscosity of air at 15 degrees C

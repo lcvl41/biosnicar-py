@@ -73,9 +73,8 @@ for index, row in data_file.iterrows():
     # ice conditions that are in the yaml file
     # ! this func should take meteorological data as inputs and change 
     # the ice params in the yaml file !
-
     radiative_flux, conductive_flux, convective_flux, latent_flux = calculate_energy_fluxes(row) 
-    update_ice_parameters(radiative_flux, conductive_flux, convective_flux, latent_flux)
+    update_snicar_parameters(radiative_flux, conductive_flux, convective_flux, latent_flux, row)
 
     ##### CALL SNICAR
     # build classes from new inputs.yaml file and validate their contents
@@ -124,6 +123,7 @@ def calculate_energy_fluxes(meteo_params):
     HEAT_CAP = meteo_params['HEAT_CAP'] # water or snow
     T_RAIN_SNOW_FALL = meteo_params['T_RAIN_SNOW_FALL'] + 273.15
     FLUX_RAIN_SNOW_FALL = meteo_params['FLUX_RAIN_SNOW_FALL']
+    IRRADIANCE = meteo_params['IRRADIANCE'] 
 
     with open("./src/inputs.yaml" , "r") as ymlfile:
             inputs = yaml.load(ymlfile, Loader=yaml.FullLoader)
@@ -138,11 +138,7 @@ def calculate_energy_fluxes(meteo_params):
     a = inputs['CRUST_DEV']['EMP_CST']
     epsilon = inputs['CRUST_DEV']['EPSILON']
     lbd = inputs['CRUST_DEV']['LAMBDA']
-    
-            
     BBA = inputs['CRUST_DEV']['BBA']
-    #maybe the irradiance goes in the meteo params ?
-    IRRADIANCE = inputs['CRUST_DEV']['IRRADIANCE'] 
     
     ### RADIATIVE FLUX 
     radiative_flux = BBA * IRRADIANCE # W m-2 = J s-1 m-2
@@ -173,7 +169,8 @@ def calculate_energy_fluxes(meteo_params):
     
     return radiative_flux, conductive_flux, convective_flux, latent_flux
 
-def update_ice_parameters(radiative_flux, conductive_flux, convective_flux, latent_flux):
+def update_snicar_parameters(radiative_flux, conductive_flux, 
+                             convective_flux, latent_flux, meteo_params):
     
     with open("./src/inputs.yaml" , "r") as ymlfile:
             inputs = yaml.load(ymlfile, Loader=yaml.FullLoader)
@@ -204,6 +201,8 @@ def update_ice_parameters(radiative_flux, conductive_flux, convective_flux, late
     output['ICE']['RDS'][0] = new_bbl_size
     output['ICE']['RDS'][1] = new_bbl_size
     output['ICE']['DZ'][1] = new_dz
+    output['RTM']['SZA'] = int(meteo_params['SZA'])
+    output['RTM']['DIRECT'] = int(meteo_params['DIRECT'])
     with open('./src/inputs.yaml', 'w') as f:
         yml.dump(output, f)
 
@@ -215,4 +214,9 @@ def update_albedo(outputs):
     output['CRUST_DEV']['BBA'] = float(round(outputs.BBA, 5))
     with open('./src/inputs.yaml', 'w') as f:
         yml.dump(output, f)
+        
+        
+        
+        
+        
     
