@@ -124,13 +124,14 @@ def calculate_energy_fluxes(meteo_params):
     T_RAIN_SNOW_FALL = meteo_params['T_RAIN_SNOW_FALL'] + 273.15
     FLUX_RAIN_SNOW_FALL = meteo_params['FLUX_RAIN_SNOW_FALL']
     IRRADIANCE = meteo_params['IRRADIANCE'] 
+    INCOMING_LONGWAVE = meteo_params['INCOMING_LONGWAVE'] 
 
     with open("./src/inputs.yaml" , "r") as ymlfile:
             inputs = yaml.load(ymlfile, Loader=yaml.FullLoader)
     
     z0 = inputs['CRUST_DEV']['Z0'] 
     z = inputs['CRUST_DEV']['HEIGHT']  
-    rho = inputs['CRUST_DEV']['RHO']
+    rho = inputs['CRUST_DEV']['RHO_AIR']
     v = inputs['CRUST_DEV']['KIN_VIS']
     g = inputs['CRUST_DEV']['ACC_G']  
     k = inputs['CRUST_DEV']['VK_CST']
@@ -139,33 +140,38 @@ def calculate_energy_fluxes(meteo_params):
     epsilon = inputs['CRUST_DEV']['EPSILON']
     lbd = inputs['CRUST_DEV']['LAMBDA']
     BBA = inputs['CRUST_DEV']['BBA']
+    sigma = inputs['CRUST_DEV']['SB_CONST']
     
-    ### RADIATIVE FLUX 
-    radiative_flux = BBA * IRRADIANCE # W m-2 = J s-1 m-2
+    ######### CALULATION FLUXES IN W M-1 or J S-1 M-2
+    ### RADIATIVE FLUX = contributing to melt
+    radiative_flux = BBA * IRRADIANCE - sigma * 0.97 * 273.15**4 + INCOMING_LONGWAVE
     
-    ### CONDUCTIVE FLUX: J kg-1 K-1 * kg m-2 s-1 * K = J m-2 s-1
+    ### CONDUCTIVE FLUX = contributing to surf lowering
     conductive_flux = HEAT_CAP * FLUX_RAIN_SNOW_FALL * (T_RAIN_SNOW_FALL - 273.15) 
     
-    ### CONVECTIVE FLUX: kg m-3 * kJ kg-1 K-1 * m s-1 * K = J m-2 s-1
+    ### CONVECTIVE FLUX = contributing to surface lowering
     zt = m.exp(m.log(z0) + 0.317 - 0.565 * m.log(z0/v) - 0.183 * (m.log(z0/v)**2))
     
-    convective_flux = 1
-    L = 5
+    convective_flux = (rho * Cp * k**2 * (WIND_SPEED*(AIR_T_Z - AIR_T_0)) / 
+                                       ((m.log(z/z0)) * 
+                                        (m.log(z/zt))))
+    L = (1 / convective_flux * rho * Cp * (AIR_T_Z - AIR_T_0) / ( g * k ) *
+         (k * WIND_SPEED / (m.log(z/z0)))**3)
     error = 10
     while error > 0.001: 
         L_new = (1 / convective_flux * rho * Cp * (AIR_T_Z - AIR_T_0) / ( g * k ) *
-         (k * WIND_SPEED / (m.log(z/z0) + (a*z / L)))**3)
+         (k * WIND_SPEED / (m.log(z/z0) + (a* z / L)))**3)
         convective_flux = (rho * Cp * k**2 * (WIND_SPEED*(AIR_T_Z - AIR_T_0)) / 
                                        ((m.log(z/z0) + (a * z / L)) * 
                                         (m.log(z/zt) + (a * z / L))))
         error = L_new - L
         L = L_new
 
-    ### LATENT FLUX: kg m-3 * J kg -1 * m s-1 * kPA * kPa-1 = J m-2 s-1
-    ze = m.exp(m.log(z0) + 0.396 - 0.512 * m.log(z0/v) - 0.183 * (m.log(z0/v)**2))
-    latent_flux =  (rho * epsilon * lbd * k**2 * 
-                    (WIND_SPEED*(AIR_VAP_P_Z - AIR_VAP_P_0)) / 
-                    AIR_P_Z*((m.log(z/z0) + (a * z / L)) * (m.log(z/ze) + (a * z / L))))
+    ### LATENT FLUX = contributing to surface lowering
+    ze = m.exp(m.log(z0) + 0.396 - 0.512 * m.log(z0/v) - 0.180 * (m.log(z0/v)**2))
+    latent_flux =  rho * epsilon * lbd * k * k * WIND_SPEED*\
+                    (AIR_VAP_P_Z - AIR_VAP_P_0) /\
+                    (AIR_P_Z*((m.log(z/z0) + (a * z / L)) * (m.log(z/ze) + (a * z / L))))
     
     return radiative_flux, conductive_flux, convective_flux, latent_flux
 
@@ -185,11 +191,12 @@ def update_snicar_parameters(radiative_flux, conductive_flux,
     # then this is subtracted to old density to get new one
     new_density = density - (radiative_flux * 3.600 / 334 / dz)
     new_bbl_size = 5000
-    new_dz = 0.08
+    new_dz = 0.1
     if new_density < 300:
         new_density = 890
         new_dz = 0.1
-    
+    if new_density > 916:
+        new_density = 916
     
     # UPDATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
 

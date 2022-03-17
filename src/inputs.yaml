@@ -15,14 +15,14 @@ RTM:
   NIR_MAX_IDX: 480
   SZA: 45 # updated from crust dev model
 ICE:
-  DZ: [0.001, 0.08] # updated from crust dev model
+  DZ: [0.001, 0.1]  # updated from crust dev model
   LAYER_TYPE: [0, 1] # maybe to update if snowfall included
-  CDOM: [0, 0]  
-  RHO: [916, 884.0] # updated from crust dev model
+  CDOM: [0, 0]
+  RHO: [916, 834.0] # updated from crust dev model
   RF: 2
-  SHP: [0, 0] 
+  SHP: [0, 0]
   RDS: [5000, 5000]  # updated from crust dev model
-  WATER: [0, 0]  
+  WATER: [0, 0]
   HEX_SIDE: [10000, 10000]
   HEX_LENGTH: [10000, 10000]
   SHP_FCTR: [0, 0]
@@ -112,11 +112,11 @@ BIOOPTICAL:
   INFO_NETCDF: "info"
   FILENAME_NETCDF: "alg"
 CRUST_DEV:
-  BBA: 0.1053 # updated from crust dev model
+  BBA: 0.15891 # updated from crust dev model
   IRRADIANCE: 750   # updated from crust dev model
-  Z0: 0.000246   # cst unitless from Schuster 2001
+  Z0: 0.00246   # cst unitless from Schuster 2001
   HEIGHT: 1   # m
-  RHO: 1.225   # kg/m3 at sea level and 15 degrees C
+  RHO_AIR: 1.225   # kg/m3 at sea level and 15 degrees C
   KIN_VIS: 0.0000148   # m2 s-1 kinematic viscosity of air at 15 degrees C
   ACC_G: 9.8   # m s-2
   VK_CST: 0.41   # unitless von Karman's cst from Schuster 2001
@@ -124,4 +124,4 @@ CRUST_DEV:
   EMP_CST: 5   # empirical constant from Schuster 2001
   EPSILON: 0.621859   # ratio molecular weight wat vapor to air
   LAMBDA: 250100   # J kg -1 latent heat of vaporisation
-
+  SB_CONST: 0.0000000567 # Stefan Boltzmann constant
