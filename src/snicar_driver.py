@@ -55,8 +55,8 @@ outputs1 = adding_doubling_solver(tau, ssa, g, L_snw, ice, illumination, model_c
 outputs2 = toon_solver(tau, ssa, g, L_snw, ice, illumination, model_config, rt_config)
 
 # plot and print output data
-# plot_albedo(plot_config, model_config, outputs1.albedo)
-# display_out_data(outputs1)
+plot_albedo(plot_config, model_config, outputs1.albedo)
+display_out_data(outputs1)
 
 
 #%%
@@ -65,17 +65,17 @@ outputs2 = toon_solver(tau, ssa, g, L_snw, ice, illumination, model_config, rt_c
 ###########################
 
 # meteorological params throughout the day
-data_file = '.csv' 
-
-for meteo_params in data_file: 
-    
+data_file = pd.read_csv("./src/crust_dev_params.csv")
+#albedo = np.ndarray(shape=(480,2))
+for index, row in data_file.iterrows():
     ###### CALL CRUST MODEL
     # re_calculate density, bbl size and dz from energy inputs and 
     # ice conditions that are in the yaml file
     # ! this func should take meteorological data as inputs and change 
     # the ice params in the yaml file !
 
-    update_ice_parameters(meteo_params) 
+    radiative_flux, conductive_flux, convective_flux, latent_flux = calculate_energy_fluxes(row) 
+    update_ice_parameters(radiative_flux, conductive_flux, convective_flux, latent_flux)
 
     ##### CALL SNICAR
     # build classes from new inputs.yaml file and validate their contents
@@ -94,11 +94,11 @@ for meteo_params in data_file:
     outputs = adding_doubling_solver(tau, ssa, g, L_snw, ice, 
                                     illumination, model_config)
 
-    inputs['CRUST_DEV']['BBA'] = outputs.BBA
-
+    update_albedo(outputs) 
+    #albedo[:,index] = outputs.albedo
     plot_albedo(plot_config, model_config, outputs.albedo)
-
-    display_out_data(outputs1)
+    
+    #display_out_data(outputs1)
 
     
     
@@ -111,43 +111,46 @@ input_file = "./src/inputs.yaml"
 import numpy as np
 import yaml
 import math as m
+from ruamel.yaml import YAML
 
-def update_ice_parameters():
-    meteo_params = np.array([0,10,1,3,2,5,0,0,0])
-    AIR_T_0 = meteo_params[0] + 273.15
-    AIR_T_Z = meteo_params[1] + 273.15
-    AIR_P_Z = meteo_params[2]
-    AIR_VAP_P_0 = meteo_params[3]
-    AIR_VAP_P_Z = meteo_params[4]
-    WIND_SPEED = meteo_params[5]
-    HEAT_CAP = meteo_params[6] # water or snow
-    T_RAIN_SNOW_FALL = meteo_params[7] + 273.15
-    FLUX_RAIN_SNOW_FALL = meteo_params[8]
-    z0 = 0.00246 # surface roughness from Schuster 2001
-    z = 1 # height of sensor 
-    rho = 1.2690 # air density, ideally as a function of T
-    v = 13.72 * 10**6 # kinematic viscosity of air m2 s-1
-    g = 0.9 # m s-2
-    k = 0.41 # von Karman's cst
-    Cp = 1010 # specific heat of air J kg-1 K-1 
-    a = 5 # empirical correction (??)
-    epsilon = 0.018016  / 0.0289652 # ratio molecular weight of water vapour to air
-    lbd  = 250.1 # latent heat of vap kg kJ -1 at 0 deg C
-    #import yaml
+def calculate_energy_fluxes(meteo_params):
+    
+    AIR_T_0 = meteo_params['AIR_T_0'] + 273.15
+    AIR_T_Z = meteo_params['AIR_T_Z'] + 273.15
+    AIR_P_Z = meteo_params['AIR_P_Z']
+    AIR_VAP_P_0 = meteo_params['AIR_VAP_P_0']
+    AIR_VAP_P_Z = meteo_params['AIR_VAP_P_Z']
+    WIND_SPEED = meteo_params['WIND_SPEED']
+    HEAT_CAP = meteo_params['HEAT_CAP'] # water or snow
+    T_RAIN_SNOW_FALL = meteo_params['T_RAIN_SNOW_FALL'] + 273.15
+    FLUX_RAIN_SNOW_FALL = meteo_params['FLUX_RAIN_SNOW_FALL']
+
     with open("./src/inputs.yaml" , "r") as ymlfile:
             inputs = yaml.load(ymlfile, Loader=yaml.FullLoader)
+    
+    z0 = inputs['CRUST_DEV']['Z0'] 
+    z = inputs['CRUST_DEV']['HEIGHT']  
+    rho = inputs['CRUST_DEV']['RHO']
+    v = inputs['CRUST_DEV']['KIN_VIS']
+    g = inputs['CRUST_DEV']['ACC_G']  
+    k = inputs['CRUST_DEV']['VK_CST']
+    Cp = inputs['CRUST_DEV']['CP']
+    a = inputs['CRUST_DEV']['EMP_CST']
+    epsilon = inputs['CRUST_DEV']['EPSILON']
+    lbd = inputs['CRUST_DEV']['LAMBDA']
+    
             
     BBA = inputs['CRUST_DEV']['BBA']
     #maybe the irradiance goes in the meteo params ?
     IRRADIANCE = inputs['CRUST_DEV']['IRRADIANCE'] 
     
     ### RADIATIVE FLUX 
-    radiative_flux = BBA * IRRADIANCE
+    radiative_flux = BBA * IRRADIANCE # W m-2 = J s-1 m-2
     
-    ### CONDUCTIVE FLUX 
-    conductive_flux = HEAT_CAP * FLUX_RAIN_SNOW_FALL * (T_RAIN_SNOW_FALL - 273.15)
+    ### CONDUCTIVE FLUX: J kg-1 K-1 * kg m-2 s-1 * K = J m-2 s-1
+    conductive_flux = HEAT_CAP * FLUX_RAIN_SNOW_FALL * (T_RAIN_SNOW_FALL - 273.15) 
     
-    ### CONVECTIVE FLUX 
+    ### CONVECTIVE FLUX: kg m-3 * kJ kg-1 K-1 * m s-1 * K = J m-2 s-1
     zt = m.exp(m.log(z0) + 0.317 - 0.565 * m.log(z0/v) - 0.183 * (m.log(z0/v)**2))
     
     convective_flux = 1
@@ -162,31 +165,54 @@ def update_ice_parameters():
         error = L_new - L
         L = L_new
 
-    ### LATENT FLUX 
+    ### LATENT FLUX: kg m-3 * J kg -1 * m s-1 * kPA * kPa-1 = J m-2 s-1
     ze = m.exp(m.log(z0) + 0.396 - 0.512 * m.log(z0/v) - 0.183 * (m.log(z0/v)**2))
     latent_flux =  (rho * epsilon * lbd * k**2 * 
                     (WIND_SPEED*(AIR_VAP_P_Z - AIR_VAP_P_0)) / 
                     AIR_P_Z*((m.log(z/z0) + (a * z / L)) * (m.log(z/ze) + (a * z / L))))
     
-    # CALCULATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
-    density = 700 
-    bbl_size = 5000
-    dz = 0.08
+    return radiative_flux, conductive_flux, convective_flux, latent_flux
+
+def update_ice_parameters(radiative_flux, conductive_flux, convective_flux, latent_flux):
+    
+    with open("./src/inputs.yaml" , "r") as ymlfile:
+            inputs = yaml.load(ymlfile, Loader=yaml.FullLoader)
+    
+    density = inputs['ICE']['RHO'][1]
+    bbl_size = inputs['ICE']['RDS'][1]
+    dz = inputs['ICE']['DZ'][1]
+    
+    # # CALCULATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
+    # kJ h-1 m-2 kJ -1 kg --> kg h-1 m-2 then divided by dz
+    # this gives the kg lost per hour per m3 
+    # then this is subtracted to old density to get new one
+    new_density = density - (radiative_flux * 3.600 / 334 / dz)
+    new_bbl_size = 5000
+    new_dz = 0.08
+    if new_density < 300:
+        new_density = 890
+        new_dz = 0.1
+    
     
     # UPDATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
 
-    from ruamel.yaml import YAML
     yml = YAML()
     yml.preserve_quotes = True
     yml.boolean_representation = ['False', 'True']
     output = yml.load(open("./src/inputs.yaml"))
-    output['CRUST_DEV']['DENSITY'] = density
-    output['CRUST_DEV']['BBL_GRAIN_SIZE'] = bbl_size
-    output['CRUST_DEV']['DEPTH'] = dz
-    with open('./src/new.yaml', 'w') as f:
+    output['ICE']['RHO'][1] = float(round(new_density, 0))
+    output['ICE']['RDS'][0] = new_bbl_size
+    output['ICE']['RDS'][1] = new_bbl_size
+    output['ICE']['DZ'][1] = new_dz
+    with open('./src/inputs.yaml', 'w') as f:
         yml.dump(output, f)
 
-
-
-    
+def update_albedo(outputs):
+    yml = YAML()
+    yml.preserve_quotes = True
+    yml.boolean_representation = ['False', 'True']
+    output = yml.load(open("./src/inputs.yaml"))
+    output['CRUST_DEV']['BBA'] = float(round(outputs.BBA, 5))
+    with open('./src/inputs.yaml', 'w') as f:
+        yml.dump(output, f)
     
