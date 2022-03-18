@@ -15,13 +15,13 @@ RTM:
   NIR_MAX_IDX: 480
   SZA: 45 # updated from crust dev model
 ICE:
-  DZ: [0.001, 0.1]  # updated from crust dev model
+  DZ: [0.001, 0.5]  # updated from crust dev model
   LAYER_TYPE: [0, 1] # maybe to update if snowfall included
   CDOM: [0, 0]
-  RHO: [916, 834.0] # updated from crust dev model
+  RHO: [916, 890] # updated from crust dev model
   RF: 2
   SHP: [0, 0]
-  RDS: [5000, 5000]  # updated from crust dev model
+  RDS: [2000, 2000]  # updated from crust dev model
   WATER: [0, 0]
   HEX_SIDE: [10000, 10000]
   HEX_LENGTH: [10000, 10000]
@@ -46,21 +46,7 @@ IMPURITIES:
     COATED: False
     UNIT: 0
     CONC: [0, 0]
-  SA:
-    NAME: "sa"
-    FILE: "snw_alg_r025um_chla020_chlb025_cara150_carb140.nc"
-    CFACTOR: 1
-    COATED: False
-    UNIT: 0
-    CONC: [0, 0]
 
-  GA:
-    NAME: "ga"
-    FILE: "Cook2020_glacier_algae_4_40.nc"
-    CFACTOR: 1
-    COATED: False
-    UNIT: 0
-    CONC: [0, 0]
 PLOT:
   FIG_SIZE: (8,6)
   FACECOLOR: "white"

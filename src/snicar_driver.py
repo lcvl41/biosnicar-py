@@ -52,11 +52,12 @@ tau, ssa, g, L_snw = mix_in_impurities(
 # now run one or both of the radiative transfer solvers
 outputs1 = adding_doubling_solver(tau, ssa, g, L_snw, ice, illumination, model_config)
 
-outputs2 = toon_solver(tau, ssa, g, L_snw, ice, illumination, model_config, rt_config)
+#outputs2 = toon_solver(tau, ssa, g, L_snw, ice, illumination, model_config, rt_config)
 
 # plot and print output data
 plot_albedo(plot_config, model_config, outputs1.albedo)
-display_out_data(outputs1)
+print(outputs1.flx_extinction)
+#display_out_data(outputs1)
 
 
 #%%
@@ -175,6 +176,7 @@ def calculate_energy_fluxes(meteo_params):
     
     return radiative_flux, conductive_flux, convective_flux, latent_flux
 
+
 def update_snicar_parameters(radiative_flux, conductive_flux, 
                              convective_flux, latent_flux, meteo_params):
     
@@ -189,14 +191,18 @@ def update_snicar_parameters(radiative_flux, conductive_flux,
     # kJ h-1 m-2 kJ -1 kg --> kg h-1 m-2 then divided by dz
     # this gives the kg lost per hour per m3 
     # then this is subtracted to old density to get new one
+    
+    new_dz = 0.1 #this has to be the depth where solar irradiance stops! 
+    # depends on the density! 
     new_density = density - (radiative_flux * 3.600 / 334 / dz)
     new_bbl_size = 5000
-    new_dz = 0.1
-    if new_density < 300:
+    # (!!!) need to implement collapse - it's not going to be
+    # 350 kg m3 on 30cm!
+    if new_density < 350:
         new_density = 890
         new_dz = 0.1
-    if new_density > 916:
-        new_density = 916
+    if new_density > 890:
+        new_density = 890
     
     # UPDATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
 
