@@ -151,25 +151,36 @@ def calculate_energy_fluxes(meteo_params):
     conductive_flux = HEAT_CAP * FLUX_RAIN_SNOW_FALL * (T_RAIN_SNOW_FALL - 273.15) 
     
     ### CONVECTIVE FLUX = contributing to surface lowering
-    zt = m.exp(m.log(z0) + 0.317 - 0.565 * m.log(z0/v) - 0.183 * (m.log(z0/v)**2))
-    
+    # initialize conv flux and length scale with a * z / L = 0 
+    friction_velocity = k * WIND_SPEED / (m.log(z/z0))
+    REN = friction_velocity * z0 / v 
+    zt = m.exp(m.log(z0) + 0.317 - 0.565 * m.log(REN) - 0.183 * (m.log(REN)**2))
+    ze = m.exp(m.log(z0) + 0.396 - 0.512 * m.log(REN) - 0.180 * (m.log(REN)**2))
     convective_flux = (rho * Cp * k**2 * (WIND_SPEED*(AIR_T_Z - AIR_T_0)) / 
                                        ((m.log(z/z0)) * 
                                         (m.log(z/zt))))
     L = (1 / convective_flux * rho * Cp * (AIR_T_Z - AIR_T_0) / ( g * k ) *
          (k * WIND_SPEED / (m.log(z/z0)))**3)
+    
+    # loop to converge to correct value for zt, we, L and conv flux
     error = 10
     while error > 0.001: 
-        L_new = (1 / convective_flux * rho * Cp * (AIR_T_Z - AIR_T_0) / ( g * k ) *
-         (k * WIND_SPEED / (m.log(z/z0) + (a* z / L)))**3)
+        # Schuster 2001 : tau = k * WIND_SPEED / (m.log(z/z0) + (a* z / L))
+        # Munro 1990 : tau = u*
+        friction_velocity = k * WIND_SPEED / (m.log(z/z0) + (a * z / L))
+        REN = friction_velocity * z0 / v 
+        zt = m.exp(m.log(z0) + 0.317 - 0.565 * m.log(REN) - 0.183 * (m.log(REN)**2))
+        ze = m.exp(m.log(z0) + 0.396 - 0.512 * m.log(REN) - 0.180 * (m.log(REN)**2))
         convective_flux = (rho * Cp * k**2 * (WIND_SPEED*(AIR_T_Z - AIR_T_0)) / 
                                        ((m.log(z/z0) + (a * z / L)) * 
                                         (m.log(z/zt) + (a * z / L))))
+        L_new = (1 / (convective_flux * g * k) * rho * Cp * (AIR_T_Z - AIR_T_0) *
+         (friction_velocity)**3)
         error = L_new - L
         L = L_new
 
     ### LATENT FLUX = contributing to surface lowering
-    ze = m.exp(m.log(z0) + 0.396 - 0.512 * m.log(z0/v) - 0.180 * (m.log(z0/v)**2))
+    
     latent_flux =  rho * epsilon * lbd * k * k * WIND_SPEED*\
                     (AIR_VAP_P_Z - AIR_VAP_P_0) /\
                     (AIR_P_Z*((m.log(z/z0) + (a * z / L)) * (m.log(z/ze) + (a * z / L))))
@@ -192,17 +203,18 @@ def update_snicar_parameters(radiative_flux, conductive_flux,
     # this gives the kg lost per hour per m3 
     # then this is subtracted to old density to get new one
     
-    new_dz = 0.1 #this has to be the depth where solar irradiance stops! 
+    new_dz = 0.1 # this has to be the depth where solar irradiance stops! 
     # depends on the density! 
     new_density = density - (radiative_flux * 3.600 / 334 / dz)
     new_bbl_size = 5000
     # (!!!) need to implement collapse - it's not going to be
     # 350 kg m3 on 30cm!
-    if new_density < 350:
-        new_density = 890
+    if new_density < 350: #if too low, collapse 
+        new_density = 700
         new_dz = 0.1
-    if new_density > 890:
+    if new_density > 890: # if too high, stays at 890 but dz decreases?
         new_density = 890
+        new_dz = 0.9 * dz
     
     # UPDATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
 

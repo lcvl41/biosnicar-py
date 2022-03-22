@@ -15,13 +15,13 @@ RTM:
   NIR_MAX_IDX: 480
   SZA: 45 # updated from crust dev model
 ICE:
-  DZ: [0.001, 0.5]  # updated from crust dev model
+  DZ: [0.001, 0.1]  # updated from crust dev model
   LAYER_TYPE: [0, 1] # maybe to update if snowfall included
   CDOM: [0, 0]
-  RHO: [916, 890] # updated from crust dev model
+  RHO: [916, 821.0] # updated from crust dev model
   RF: 2
   SHP: [0, 0]
-  RDS: [2000, 2000]  # updated from crust dev model
+  RDS: [5000, 5000]  # updated from crust dev model
   WATER: [0, 0]
   HEX_SIDE: [10000, 10000]
   HEX_LENGTH: [10000, 10000]
@@ -98,7 +98,7 @@ BIOOPTICAL:
   INFO_NETCDF: "info"
   FILENAME_NETCDF: "alg"
 CRUST_DEV:
-  BBA: 0.15891 # updated from crust dev model
+  BBA: 0.17    # updated from crust dev model
   IRRADIANCE: 750   # updated from crust dev model
   Z0: 0.00246   # cst unitless from Schuster 2001
   HEIGHT: 1   # m
@@ -109,5 +109,5 @@ CRUST_DEV:
   CP: 1010   # kJ kg-1 K-1 specific heat of air
   EMP_CST: 5   # empirical constant from Schuster 2001
   EPSILON: 0.621859   # ratio molecular weight wat vapor to air
-  LAMBDA: 250100   # J kg -1 latent heat of vaporisation
+  LAMBDA: 250100   # J kg -1 latent heat of vaporisation / 2838 J kg-1 sublimation ice
   SB_CONST: 0.0000000567 # Stefan Boltzmann constant
