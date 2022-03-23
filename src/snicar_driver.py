@@ -56,8 +56,8 @@ outputs1 = adding_doubling_solver(tau, ssa, g, L_snw, ice, illumination, model_c
 
 # plot and print output data
 plot_albedo(plot_config, model_config, outputs1.albedo)
-print(outputs1.flx_extinction)
-#display_out_data(outputs1)
+print(outputs1.absorbed_flux_per_layer)
+display_out_data(outputs1)
 
 
 #%%
@@ -68,19 +68,14 @@ print(outputs1.flx_extinction)
 # meteorological params throughout the day
 data_file = pd.read_csv("./src/crust_dev_params.csv")
 #albedo = np.ndarray(shape=(480,2))
-for index, row in data_file.iterrows():
-    ###### CALL CRUST MODEL
-    # re_calculate density, bbl size and dz from energy inputs and 
-    # ice conditions that are in the yaml file
-    # ! this func should take meteorological data as inputs and change 
-    # the ice params in the yaml file !
-    radiative_flux, conductive_flux, convective_flux, latent_flux = calculate_energy_fluxes(row) 
-    update_snicar_parameters(radiative_flux, conductive_flux, convective_flux, latent_flux, row)
 
+for index, row in data_file.iterrows():
+    
     ##### CALL SNICAR
     # build classes from new inputs.yaml file and validate their contents
     (ice, illumination, rt_config, model_config,plot_config,impurities,
     ) = setup_snicar(input_file)
+    
     status = validate_inputs(ice, rt_config, model_config, illumination, 
                             impurities)
 
@@ -93,6 +88,15 @@ for index, row in data_file.iterrows():
     # can we update the path to irradiance to the irradiance measured from ASD?
     outputs = adding_doubling_solver(tau, ssa, g, L_snw, ice, 
                                     illumination, model_config)
+    
+    ###### CALL CRUST MODEL
+    # re_calculate density, bbl size and dz from energy inputs and 
+    # ice conditions that are in the yaml file
+    # ! this func should take meteorological data as inputs and change 
+    # the ice params in the yaml file !
+    radiative_flux_sw, radiative_flux_lw, conductive_flux, convective_flux, latent_flux = calculate_energy_fluxes(row, outputs) 
+    
+    update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_flux, convective_flux, latent_flux, row)
 
     update_albedo(outputs) 
     #albedo[:,index] = outputs.albedo
@@ -113,7 +117,7 @@ import yaml
 import math as m
 from ruamel.yaml import YAML
 
-def calculate_energy_fluxes(meteo_params):
+def calculate_energy_fluxes(meteo_params, outputs):
     
     AIR_T_0 = meteo_params['AIR_T_0'] + 273.15
     AIR_T_Z = meteo_params['AIR_T_Z'] + 273.15
@@ -124,7 +128,7 @@ def calculate_energy_fluxes(meteo_params):
     HEAT_CAP = meteo_params['HEAT_CAP'] # water or snow
     T_RAIN_SNOW_FALL = meteo_params['T_RAIN_SNOW_FALL'] + 273.15
     FLUX_RAIN_SNOW_FALL = meteo_params['FLUX_RAIN_SNOW_FALL']
-    IRRADIANCE = meteo_params['IRRADIANCE'] 
+    #IRRADIANCE = meteo_params['IRRADIANCE'] this goes into snicar
     INCOMING_LONGWAVE = meteo_params['INCOMING_LONGWAVE'] 
 
     with open("./src/inputs.yaml" , "r") as ymlfile:
@@ -140,12 +144,13 @@ def calculate_energy_fluxes(meteo_params):
     a = inputs['CRUST_DEV']['EMP_CST']
     epsilon = inputs['CRUST_DEV']['EPSILON']
     lbd = inputs['CRUST_DEV']['LAMBDA']
-    BBA = inputs['CRUST_DEV']['BBA']
+    # BBA = inputs['CRUST_DEV']['BBA'] 
     sigma = inputs['CRUST_DEV']['SB_CONST']
     
     ######### CALULATION FLUXES IN W M-1 or J S-1 M-2
     ### RADIATIVE FLUX = contributing to melt
-    radiative_flux = BBA * IRRADIANCE - sigma * 0.97 * 273.15**4 + INCOMING_LONGWAVE
+    radiative_flux_sw = outputs.absorbed_flux_per_layer[1] 
+    radiative_flux_lw = - sigma * 0.97 * 273.15**4 + INCOMING_LONGWAVE
     
     ### CONDUCTIVE FLUX = contributing to surf lowering
     conductive_flux = HEAT_CAP * FLUX_RAIN_SNOW_FALL * (T_RAIN_SNOW_FALL - 273.15) 
@@ -185,10 +190,10 @@ def calculate_energy_fluxes(meteo_params):
                     (AIR_VAP_P_Z - AIR_VAP_P_0) /\
                     (AIR_P_Z*((m.log(z/z0) + (a * z / L)) * (m.log(z/ze) + (a * z / L))))
     
-    return radiative_flux, conductive_flux, convective_flux, latent_flux
+    return radiative_flux_sw, radiative_flux_lw, conductive_flux, convective_flux, latent_flux
 
 
-def update_snicar_parameters(radiative_flux, conductive_flux, 
+def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_flux, 
                              convective_flux, latent_flux, meteo_params):
     
     with open("./src/inputs.yaml" , "r") as ymlfile:
@@ -197,22 +202,42 @@ def update_snicar_parameters(radiative_flux, conductive_flux,
     density = inputs['ICE']['RHO'][1]
     bbl_size = inputs['ICE']['RDS'][1]
     dz = inputs['ICE']['DZ'][1]
-    
+
     # # CALCULATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
     # kJ h-1 m-2 kJ -1 kg --> kg h-1 m-2 then divided by dz
     # this gives the kg lost per hour per m3 
     # then this is subtracted to old density to get new one
-    
-    new_dz = 0.1 # this has to be the depth where solar irradiance stops! 
-    # depends on the density! 
-    new_density = density - (radiative_flux * 3.600 / 334 / dz)
-    new_bbl_size = 5000
-    # (!!!) need to implement collapse - it's not going to be
-    # 350 kg m3 on 30cm!
-    if new_density < 350: #if too low, collapse 
+    new_density = density - (radiative_flux_sw * 3.600 / 334 / dz)
+    # then the amount of ice that is lost is lost at the interface of the 
+    # bubbles, so the new bbl size is calculated from removing ice around:
+    # nb_bbl per m3 = vol_air m3 per m3 / vol_bbl
+    nb_bbl = (917 - density) / 917 / (4/3 * m.pi * (bbl_size * 10**(-6))**3)
+    print(nb_bbl)
+    # volume lost per bubble: 
+    # mass lost per m3 / density of ice kg m3 = m3 lost per m3
+    # / nb_bbl per m3 = m3 lost / bbl
+    vol_gained_per_bubble = (radiative_flux_sw * 3.600 / 334 / dz) / 917 / nb_bbl
+    print(vol_gained_per_bubble)
+    # vol ice lost per bubble also writes: 
+    # v = -4/3 * pi * old_radius**3 + 4/3 * pi * new radius**3
+    # thus new radius writes: 
+    new_bbl_size = (+vol_gained_per_bubble / (4/3 * m.pi) + (bbl_size*10**(-6))**3)**(1/3)
+    print(new_bbl_size*10**6)  # from m to µm
+
+    # this stays at 10cm for now - need to be re-thought
+    # -> tricky to modulate this in function of extinction coeff bc 
+    # depth becomes too high for high density... 
+    new_dz = 0.1 
+
+    new_bbl_size = 5000 # increases when density decreases bc melt happens at 
+    # multiple scattering within bubbles 
+
+    if new_density < 350: #if too low, collapse
+    # the density increases to (?) and  
+    # the new dz is calculated from mass balance
         new_density = 700
-        new_dz = 0.1
-    if new_density > 890: # if too high, stays at 890 but dz decreases?
+        new_dz = density * dz / new_density
+    if new_density > 890: # if too high, stays at 890 but dz decreases due to melt
         new_density = 890
         new_dz = 0.9 * dz
     

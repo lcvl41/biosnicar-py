@@ -236,7 +236,7 @@ class Illumination:
             )
         )
 
-        flx_slr = incoming_file["flx_frc_sfc"].values
+        flx_slr = incoming_file["flx_dwn_sfc"].values
         flx_slr[flx_slr <= 0] = 1e-30
         self.flx_slr = flx_slr
         out = flx_slr / (self.mu_not * np.pi)
