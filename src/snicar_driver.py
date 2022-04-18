@@ -215,9 +215,14 @@ def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_fl
 
     # # CALCULATE DENSITY, BBL SIZE, DEPTH FROM THE DIFFERENT FLUXES
     # kJ h-1 m-2 kJ -1 kg --> kg h-1 m-2 then divided by dz
-    # this gives the kg lost per hour per m3 
+    # this gives the kg melt per hour per m3 
+    # this melt is corrected for the amount remaining in the 
+    # ice using Cooper et al. 2017 equation for eff porosity
+    # to calculate the effective meltwater evacuated
     # then this is subtracted to old density to get new one
-    new_density = density - (radiative_flux_sw * 3.600 / 334 / dz)
+    volumic_melt = (radiative_flux_sw * 3.600 / 334 / dz)
+    porosity = -0.97*density/1000 + 0.89
+    new_density = density - volumic_melt*porosity
     # then the amount of ice that is lost is lost at the interface of the 
     # bubbles, so the new bbl size is calculated from removing ice around:
     # nb_bbl per m3 = vol_air m3 per m3 / vol_bbl
