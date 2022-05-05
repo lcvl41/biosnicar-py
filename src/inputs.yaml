@@ -98,6 +98,7 @@ BIOOPTICAL:
   SAVE_PATH_NETCDF: "Data/OP_data/480band/lap/"
   INFO_NETCDF: "info"
   FILENAME_NETCDF: "alg"
+  
 CRUST_DEV:
   BBA: 0.33417 # updated from crust dev model
   IRRADIANCE: 750   # updated from crust dev model
