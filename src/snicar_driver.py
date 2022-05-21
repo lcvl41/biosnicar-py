@@ -56,7 +56,6 @@ outputs1 = adding_doubling_solver(tau, ssa, g, L_snw, ice, illumination, model_c
 
 # plot and print output data
 plot_albedo(plot_config, model_config, outputs1.albedo)
-print(outputs1.absorbed_flux_per_layer)
 display_out_data(outputs1)
 
 
@@ -65,15 +64,20 @@ display_out_data(outputs1)
 # CRUST DEV
 ###########################
 
-# meteorological params throughout the day
-data_file = pd.read_csv("./src/crust_dev_params.csv")
+# the initial crust structure should be updated in the inputs.yaml file
+# from the SNICAR inversion before running this code.
+# then calculate nb of bubbles in the crust from initial crust structure:
 nb_bbl = get_nb_bbl()
-#albedo = np.ndarray(shape=(480,2))
+
+# fetch meteorological params throughout the day
+data_file = pd.read_csv("./src/crust_dev_params.csv")
 
 for index, row in data_file.iterrows():
     
     ##### CALL SNICAR
-    # build classes from new inputs.yaml file and validate their contents
+    # build classes from inputs.yaml file and validate their contents
+    # (!!) path to illumination files should be changed to read SW radiation 
+    # (!!) measured in the field instead
     (ice, illumination, rt_config, model_config,plot_config,impurities,
     ) = setup_snicar(input_file)
     
@@ -85,8 +89,8 @@ for index, row in data_file.iterrows():
     tau, ssa, g, L_snw = mix_in_impurities(
     ssa_snw, g_snw, mac_snw, ice, impurities, model_config
     )
-    # now generate and plot outputs
-    # can we update the path to irradiance to the irradiance measured from ASD?
+    
+    # now run the AD solver to get albedo and associated variables
     outputs = adding_doubling_solver(tau, ssa, g, L_snw, ice, 
                                     illumination, model_config)
     
@@ -108,10 +112,6 @@ for index, row in data_file.iterrows():
     
     
 #%%
-# fetch initial conditions in the yaml file (in functions afterwards)
-# --> NEED TO CREATE A "CRUST_DV" BLOCK
-# !! this need to include initial conditions for radiative forcing, 
-# all snicar params and meterological params
 input_file = "./src/inputs.yaml" 
 import numpy as np
 import yaml
@@ -269,7 +269,7 @@ def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_fl
     output['ICE']['RDS'][1] = new_bbl_size
     output['ICE']['RDS_CALC'] = new_bbl_size_calc
     output['ICE']['DZ'][1] = new_dz
-    output['RTM']['SZA'] = int(meteo_params['SZA'])
+    output['RTM']['SOLZEN'] = int(meteo_params['SOLZEN'])
     output['RTM']['DIRECT'] = int(meteo_params['DIRECT'])
     with open('./src/inputs.yaml', 'w') as f:
         yml.dump(output, f)

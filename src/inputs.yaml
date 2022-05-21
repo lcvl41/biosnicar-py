@@ -7,21 +7,20 @@ RTM:
   NBR_WVL: 480
   APRX_TYP: 2
   DELTA: True
-  SOLZEN: 50
+  SOLZEN: 49
   INCOMING: 0 # to update from empirical ASD data !
   ILLUMINATION_FILE_STUBS: ["swnb_480bnd_mlw", "swnb_480bnd_mls", "swnb_480bnd_saw",
     "swnb_480bnd_sas", "swnb_480bnd_smm", "swnb_480bnd_hmn", "swnb_480bnd_trp"]
   VIS_MAX_IDX: 39
   NIR_MAX_IDX: 480
-  SZA: 89 # updated from crust dev model
 ICE:
-  DZ: [0.001, 0.1]                  # updated from crust dev model
+  DZ: [0.001, 0.055]                  # updated from crust dev model
   LAYER_TYPE: [0, 1] # maybe to update if snowfall included
   CDOM: [0, 0]
-  RHO: [916, 430.0] # updated from crust dev model
+  RHO: [916, 680] # updated from crust dev model
   RF: 2
   SHP: [0, 0]
-  RDS: [7000, 7000]  # updated from crust dev model
+  RDS: [8000, 8000]  # updated from crust dev model
   RDS_CALC: 7000
   WATER: [0, 0]
   HEX_SIDE: [10000, 10000]
@@ -40,14 +39,13 @@ PATHS:
   FN_WATER: "/Data/OP_data/Refractive_Index_Liquid_Water_Segelstein_1981.csv"
   FLX_DIR: "Data/OP_data/480band/fsds/"
 IMPURITIES:
-  BC:
-    NAME: "bc"
-    FILE: "bc_ChCB_rn40_dns1270.nc"
-    CFACTOR: 1
+  ALG:
+    NAME: "alg"
+    FILE: "GA_Chevrollier2022_r4.9_L18.8.nc"
+    CFACTOR: 32.5
     COATED: False
-    UNIT: 0
-    CONC: [0, 0]
-
+    UNIT: 1
+    CONC: [29440, 0]
 PLOT:
   FIG_SIZE: (8,6)
   FACECOLOR: "white"
