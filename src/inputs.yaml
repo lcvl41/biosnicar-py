@@ -21,7 +21,7 @@ ICE:
   RF: 2
   SHP: [0, 0]
   RDS: [8000, 8000]  # updated from crust dev model
-  RDS_CALC: 7000
+  RDS_CALC: 8000
   WATER: [0, 0]
   HEX_SIDE: [10000, 10000]
   HEX_LENGTH: [10000, 10000]
@@ -42,10 +42,17 @@ IMPURITIES:
   ALG:
     NAME: "alg"
     FILE: "GA_Chevrollier2022_r4.9_L18.8.nc"
-    CFACTOR: 32.5
+    CFACTOR: 41
     COATED: False
     UNIT: 1
-    CONC: [29440, 0]
+    CONC: [0, 0]
+  DUST:
+    NAME: "dust_qqt"
+    FILE: "dust_QQT_044um_Mie.nc"
+    CFACTOR: 1
+    COATED: False
+    UNIT: 0
+    CONC: [0, 0]
 PLOT:
   FIG_SIZE: (8,6)
   FACECOLOR: "white"

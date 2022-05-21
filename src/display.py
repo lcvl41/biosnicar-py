@@ -37,7 +37,7 @@ def plot_albedo(plot_config, model_config, albedo):
 
     plt.plot(wvl, albedo), plt.ylabel("Albedo", fontsize=18), plt.xlabel(
         "Wavelength (µm)", fontsize=18
-    ), plt.xlim(0.3, 2.5), plt.ylim(0, 1), plt.xticks(fontsize=15), plt.yticks(
+    ), plt.xlim(0.35, 2.5), plt.ylim(0, 1), plt.xticks(fontsize=15), plt.yticks(
         fontsize=15
     ), plt.axvline(
         x=0.68, color="g", linestyle="dashed"
