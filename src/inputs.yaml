@@ -14,14 +14,14 @@ RTM:
   VIS_MAX_IDX: 39
   NIR_MAX_IDX: 480
 ICE:
-  DZ: [0.001, 0.055]                  # updated from crust dev model
+  DZ: [0.001, 0.055]         # updated from crust dev model
   LAYER_TYPE: [0, 1] # maybe to update if snowfall included
   CDOM: [0, 0]
   RHO: [916, 680] # updated from crust dev model
   RF: 2
   SHP: [0, 0]
   RDS: [8000, 8000]  # updated from crust dev model
-  RDS_CALC: 8000
+  RDS_CALC: 9500
   WATER: [0, 0]
   HEX_SIDE: [10000, 10000]
   HEX_LENGTH: [10000, 10000]
@@ -103,9 +103,8 @@ BIOOPTICAL:
   SAVE_PATH_NETCDF: "Data/OP_data/480band/lap/"
   INFO_NETCDF: "info"
   FILENAME_NETCDF: "alg"
-  
 CRUST_DEV:
-  BBA: 0.33417 # updated from crust dev model
+  BBA: 0.20671 # updated from crust dev model
   IRRADIANCE: 750   # updated from crust dev model
   Z0: 0.00246   # cst unitless from Schuster 2001
   HEIGHT: 1   # m
