@@ -1055,8 +1055,11 @@ def get_outputs(illumination, albedo, model_config, L_snw, F_abs, F_btm_net, trn
     # Spectrally-integrated absorption by each layer
     outputs.absorbed_flux_per_layer = F_abs_slr
     
-    # extinction in each layer : (f_dwn - f_ up) / f_dwn[:,0]
-    outputs.flx_extinction = (np.sum(F_dwn, axis=0)-np.sum(F_up, axis=0))/np.sum(F_dwn[:,0])
+    # Absorption by each layer
+    outputs.absorbed_spectral_flux_per_layer = F_abs
+    
+    # extinction in the ice layer: 
+    outputs.flx_extinction = - np.log(F_dwn[:,2]/F_dwn[:,1])
 
     return outputs
 
