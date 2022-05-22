@@ -66,13 +66,14 @@ display_out_data(outputs1)
 
 #5200000 dust
 #algae 29440
-
+sys.path.append("./src")
 # the initial crust structure should be updated in the inputs.yaml file
 # from the SNICAR inversion before running this code.
 # then calculate nb of bubbles in the crust from initial crust structure:
 nb_bbl = get_nb_bbl()
 ablation = 0
-albedo_array = np.array(([np.zeros(480)]*6))
+albedo_array = np.array(([np.zeros(480)]*10))
+BBA_array = np.zeros(10)
 #wvl= np.arange(0.205,5,0.01)
 
 # fetch meteorological params throughout the day
@@ -100,6 +101,7 @@ for index, row in data_file.iterrows():
     outputs = adding_doubling_solver(tau, ssa, g, L_snw, ice, 
                                     illumination, model_config)
     albedo_array[index,:]=outputs.albedo
+    BBA_array[index] = outputs.BBA
     
     ###### CALL CRUST MODEL
     # re_calculate density, bbl size and dz from energy inputs and 
@@ -118,8 +120,40 @@ for index, row in data_file.iterrows():
     
     #display_out_data(outputs1)
 
-    
-    
+#%%
+rc = {
+        "figure.figsize": (8, 6),
+        "axes.facecolor": str(plot_config.facecolor),
+        "axes.grid": plot_config.grid,
+        "grid.color": str(plot_config.grid_color),
+        "xtick.major.width": plot_config.xtick_width,
+        "xtick.major.size": plot_config.xtick_size,
+        "ytick.major.width": plot_config.ytick_width,
+        "ytick.major.size": plot_config.ytick_size,
+        "axes.linewidth": plot_config.linewidth,
+        "font.size": plot_config.fontsize,
+        "xtick.bottom": plot_config.xtick_btm,
+        "ytick.left": plot_config.ytick_left,
+    }
+
+plt.style.use("seaborn")
+sns.set_style("white")
+plt.rcParams.update(rc)
+plt.plot(wvl,albedo_array[0,:], 'k--', label="10am, meas"),
+#plt.plot(wvl,albedo_array[1,:], label="11am"),
+plt.plot(wvl,albedo_array[2,:],'midnightblue', label="12am"),
+plt.plot(wvl,albedo_array[3,:],'steelblue', label="1pm"),
+#plt.plot(wvl,albedo_array[4,:],'g:', label="2pm"),
+plt.plot(wvl,albedo_array[5,:], 'slategray', label="3pm"),
+plt.plot(wvl,albedo_array[6,:],'brown', label="4pm"),
+#plt.plot(wvl,albedo_array[7,:], label="5pm"), 
+plt.plot(wvl,albedo_array[8,:],'indianred', label="6pm"),
+plt.plot(wvl,albedo_array[9,:],'lightcoral', label="7pm"),
+plt.xlim(0.35,2), plt.ylim(0,0.45), plt.yticks(fontsize=18), plt.xticks(fontsize=18)
+plt.ylabel("Albedo",fontsize=18), plt.xlabel("Wavelengths (um)",fontsize=18), 
+plt.legend(fontsize=18)
+plt.title("060821_S1 with dust and algae",fontsize=20, pad=20)
+#plt.savefig("/Users/au660413/Desktop/060821_S1_alg_dust.png", dpi=300,bbox_inches='tight')
 #%%
 input_file = "./src/inputs.yaml" 
 import numpy as np
@@ -223,8 +257,8 @@ def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_fl
     bbl_size = inputs['ICE']['RDS'][1]
     dz = inputs['ICE']['DZ'][1]
     
-    # Water table 3% lower each hour
-    new_dz = dz/0.97
+    # Water table 5% lower each hour
+    new_dz = dz#/0.95
     
     # Ice porosity (Cooper et al. 2018)
     porosity = -0.97*density/1000 + 0.89
