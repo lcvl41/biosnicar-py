@@ -293,9 +293,9 @@ def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_fl
     # bubbles, so the new bbl size is calculated from removing ice around:
     # nb_bbl per m3 = vol_air m3 per m3 / vol_bbl
     # volume lost per bubble: 
-    # mass lost per m3 / density of ice kg m3 = m3 lost per m3
+    # mass lost per m3 / density of melted water kg m3 = m3 lost per m3
     # / nb_bbl per m3 = m3 lost / bbl converted to um3 / m3
-    vol_gained_per_bubble = (mass_volumic_internal_evacuated-mass_volumic_pecolating) / 917 / nb_bbl *10**(18)
+    vol_gained_per_bubble = (mass_volumic_internal_evacuated-mass_volumic_pecolating) / 1000 / nb_bbl *10**(18)
     # vol gained per bubble also writes: 
     # v = -4/3 * pi * old_radius**3 + 4/3 * pi * new radius**3
     # thus new radius writes: 
