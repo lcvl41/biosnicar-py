@@ -64,63 +64,65 @@ display_out_data(outputs1)
 # CRUST DEV
 ###########################
 
-#5200000 dust
-#algae 29440
-sys.path.append("./src")
 # the initial crust structure should be updated in the inputs.yaml file
 # from the SNICAR inversion before running this code.
 # then calculate nb of bubbles in the crust from initial crust structure:
 nb_bbl = get_nb_bbl()
-ablation = 0
-albedo_array = np.array(([np.zeros(480)]*10))
-BBA_array = np.zeros(10)
-#wvl= np.arange(0.205,5,0.01)
-
 # fetch meteorological params throughout the day
 data_file = pd.read_csv("./src/crust_dev_params.csv")
+
+# initialize ablation
+ablation = 0
+# initialize array storing albedo throughout the day
+nb_iterations = 10
+albedo_array = np.array(([np.zeros(480)]*nb_iterations))
+BBA_array = np.zeros(nb_iterations)
+wvl= np.arange(0.205,5,0.01)
 
 for index, row in data_file.iterrows():
     
     ##### CALL SNICAR
     # build classes from inputs.yaml file and validate their contents
-    # (!!) path to illumination files should be changed to read SW radiation 
-    # (!!) measured in the field instead
+    # (!!) path to illumination files should be changed to read empirical 
+    # SW radiation measured in the field 
     (ice, illumination, rt_config, model_config,plot_config,impurities,
     ) = setup_snicar(input_file)
     
+    # validate inputs
     status = validate_inputs(ice, rt_config, model_config, illumination, 
                             impurities)
 
-    # now get the optical properties of the ice column
+    # get the optical properties of the ice column
     ssa_snw, g_snw, mac_snw = get_layer_OPs(ice, model_config)
     tau, ssa, g, L_snw = mix_in_impurities(
     ssa_snw, g_snw, mac_snw, ice, impurities, model_config
     )
     
-    # now run the AD solver to get albedo and associated variables
+    # run the AD solver to get albedo and associated variables
     outputs = adding_doubling_solver(tau, ssa, g, L_snw, ice, 
                                     illumination, model_config)
-    albedo_array[index,:]=outputs.albedo
+    albedo_array[index,:] = outputs.albedo
     BBA_array[index] = outputs.BBA
     
     ###### CALL CRUST MODEL
-    # re_calculate density, bbl size and dz from energy inputs and 
-    # ice conditions that are in the yaml file
-    # ! this func should take meteorological data as inputs and change 
-    # the ice params in the yaml file !
-    radiative_flux_sw, radiative_flux_lw, conductive_flux, convective_flux, latent_flux,radiative_flux_sw_spectral = calculate_energy_fluxes(row, outputs) 
+    # calculate energy fluxes from meteorological parameters
+    radiative_flux_sw, radiative_flux_lw, conductive_flux, 
+    convective_flux, latent_flux,radiative_flux_sw_spectral = calculate_energy_fluxes(row, outputs) 
     
+    # update density, bbl size and dz from energy inputs and
+    # get ablation
     abl = update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_flux, convective_flux, latent_flux,
                                    radiative_flux_sw_spectral,row, nb_bbl)
     ablation = ablation + abl
+
+    # update new albedo
     update_albedo(outputs) 
-    #albedo[:,index] = outputs.albedo
     
-    plot_albedo(plot_config, model_config, outputs.albedo)
-    
-    #display_out_data(outputs1)
+    #plot_albedo(plot_config, model_config, outputs.albedo)
+   
 
 #%%
+
 rc = {
         "figure.figsize": (8, 6),
         "axes.facecolor": str(plot_config.facecolor),
@@ -152,9 +154,10 @@ plt.plot(wvl,albedo_array[9,:],'lightcoral', label="7pm"),
 plt.xlim(0.35,2), plt.ylim(0,0.45), plt.yticks(fontsize=18), plt.xticks(fontsize=18)
 plt.ylabel("Albedo",fontsize=18), plt.xlabel("Wavelengths (um)",fontsize=18), 
 plt.legend(fontsize=18)
-plt.title("060821_S1 with dust and algae",fontsize=20, pad=20)
-#plt.savefig("/Users/au660413/Desktop/060821_S1_alg_dust.png", dpi=300,bbox_inches='tight')
-#%%
+plt.title("title",fontsize=20, pad=20)
+#plt.savefig("test.png", dpi=300,bbox_inches='tight')
+
+#%% FUNCTIONS
 input_file = "./src/inputs.yaml" 
 import numpy as np
 import yaml
@@ -243,8 +246,6 @@ def get_nb_bbl():
     nb_bbl = (917 - density) / 917 / (4/3 * m.pi * (bbl_size * 10**(-6))**3)
     return nb_bbl
 
-    
-
 
 def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_flux, 
                              convective_flux, latent_flux,
@@ -257,7 +258,7 @@ def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_fl
     bbl_size = inputs['ICE']['RDS'][1]
     dz = inputs['ICE']['DZ'][1]
     
-    # Water table 5% lower each hour
+    # Water table 5% lower each hour?
     new_dz = dz#/0.95
     
     # Ice porosity (Cooper et al. 2018)
@@ -303,25 +304,19 @@ def update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_fl
                                 ((vol_gained_per_bubble / (4/3 * m.pi) +
                                  bbl_size**3)**(1/3))/500
                               )*500
-
+    # bbl size is for now rounded but new OPs files should be generated
     # increases when density decreases bc melt happens at 
-    # multiple scattering within bubbles
-    #file_ice = str("./Data/OP_data/480band/bubbly_ice_files/bbl_{}.nc").format(new_bbl_size_calc)
-    
-    #if os.path.isfile(file_ice):
-    #    new_bbl_size = new_bbl_size_calc
-    #else: 
-    #    new_bbl_size = bbl_size
+    # multiple scattering interfaces within bubbles
+   
     
     if new_density < 350: #if too low, collapse
-    # the density increases to (?) and  
     # the new dz is calculated from mass balance
-        new_density = 600
+        new_density = 600 # this needs to be changed
         new_dz = density * dz / new_density
     if new_density > 890: # if too high, stays at 915 and dz needs to be changed
-    # but thats ambiguous bc can be due to percolation or surf melt... 
+    # but thats ambiguous bc can be due to percolation or surf melt? 
         new_density = 890
-    if new_dz <0:
+    if new_dz <0: # reset ice crust to a pure ice/waterlogged crust
         new_density=890
         new_dz=0.1
         
@@ -353,8 +348,3 @@ def update_albedo(outputs):
     with open('./src/inputs.yaml', 'w') as f:
         yml.dump(output, f)
         
-        
-        
-        
-        
-    
