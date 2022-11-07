@@ -105,11 +105,11 @@ BIOOPTICAL:
 CRUST_DEV:
   BBA: 0.20071 # updated from crust dev model
   IRRADIANCE: 750   # updated from crust dev model
-  Z0: 0.00246   # cst unitless from Schuster 2001
+  Z0: 0.001   # cst unitless from Schuster 2001
   HEIGHT: 1   # m
   RHO_AIR: 1.225   # kg/m3 at sea level and 15 degrees C
-  KIN_VIS: 0.0000148   # m2 s-1 kinematic viscosity of air at 15 degrees C
-  ACC_G: 9.8   # m s-2
+  KIN_VIS: 0.00001388   # m2 s-1 kinematic viscosity of air at 0 degrees C
+  ACC_G: 9.81   # m s-2
   VK_CST: 0.41   # unitless von Karman's cst from Schuster 2001
   CP: 1010   # kJ kg-1 K-1 specific heat of air
   EMP_CST: 5   # empirical constant from Schuster 2001

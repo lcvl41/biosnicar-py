@@ -77,7 +77,8 @@ ablation = 0
 nb_iterations = 10
 albedo_array = np.array(([np.zeros(480)]*nb_iterations))
 BBA_array = np.zeros(nb_iterations)
-wvl= np.arange(0.205,5,0.01)
+wvl = np.arange(0.205,5,0.01)
+
 
 for index, row in data_file.iterrows():
     
@@ -101,22 +102,23 @@ for index, row in data_file.iterrows():
     # run the AD solver to get albedo and associated variables
     outputs = adding_doubling_solver(tau, ssa, g, L_snw, ice, 
                                     illumination, model_config)
-    albedo_array[index,:] = outputs.albedo
-    BBA_array[index] = outputs.BBA
+    #albedo_array[index,:] = outputs.albedo
+    #BBA_array[index] = outputs.BBA
     
     ###### CALL CRUST MODEL
     # calculate energy fluxes from meteorological parameters
-    radiative_flux_sw, radiative_flux_lw, conductive_flux, 
-    convective_flux, latent_flux,radiative_flux_sw_spectral = calculate_energy_fluxes(row, outputs) 
+    radiative_flux_sw, radiative_flux_lw, conductive_flux,\
+    convective_flux, latent_flux, radiative_flux_sw_spectral = calculate_energy_fluxes(row, outputs) 
     
     # update density, bbl size and dz from energy inputs and
     # get ablation
-    abl = update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_flux, convective_flux, latent_flux,
-                                   radiative_flux_sw_spectral,row, nb_bbl)
-    ablation = ablation + abl
+    #abl = update_snicar_parameters(radiative_flux_sw, radiative_flux_lw, conductive_flux, 
+    #                               convective_flux, latent_flux,
+    #                               radiative_flux_sw_spectral,row, nb_bbl)
+    #ablation = ablation + abl
 
     # update new albedo
-    update_albedo(outputs) 
+    #update_albedo(outputs) 
     
     #plot_albedo(plot_config, model_config, outputs.albedo)
    
@@ -169,8 +171,9 @@ def calculate_energy_fluxes(meteo_params, outputs):
     AIR_T_0 = meteo_params['AIR_T_0'] + 273.15
     AIR_T_Z = meteo_params['AIR_T_Z'] + 273.15
     AIR_P_Z = meteo_params['AIR_P_Z']
-    AIR_VAP_P_0 = meteo_params['AIR_VAP_P_0']
-    AIR_VAP_P_Z = meteo_params['AIR_VAP_P_Z']
+    RH = meteo_params['RH']
+    AIR_VAP_P_0 = 6.1078*m.exp((17.269*AIR_T_Z)/(AIR_T_Z+237.3))
+    AIR_VAP_P_Z = RH/100*6.1078*m.exp((17.269*AIR_T_Z)/(AIR_T_Z+237.3))
     WIND_SPEED = meteo_params['WIND_SPEED']
     HEAT_CAP = meteo_params['HEAT_CAP'] # water or snow
     T_RAIN_SNOW_FALL = meteo_params['T_RAIN_SNOW_FALL'] + 273.15
